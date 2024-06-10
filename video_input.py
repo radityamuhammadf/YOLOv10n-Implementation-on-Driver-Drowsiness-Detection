@@ -26,7 +26,11 @@ def main():
             'looking_lr': False,
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [],
-            'inference_time':[]
+            'inference_time':0,
+            'avg_cpu_time':0,
+            'avg_cuda_time':0,
+            'avg_memory_usage':0,
+            'avg_cuda_memory_usage':0
         }
     }
     # #example of adding metadata (used later for the four video data)
@@ -36,7 +40,11 @@ def main():
     #     'looking_lr': True,
     #     'detected_drowsiness': [0.1, 0.3, 0.5],  # Example list of floats
     #     'ground_truth_drowsiness': [0.2, 0.4, 0.6],  # Example list of floats
-    #     'inference_time':0
+    #     'inference_time':0,
+    #      'avg_cpu_time':0,
+    #      'avg_cuda_time':0,
+    #      'avg_memory_usage':0,
+    #      'avg_cuda_memory_usage':0
     # }
 
     #iterating every metadata element in every 'video_name' (videos_metadata members) element
@@ -61,7 +69,8 @@ def main():
 
         drowsy_state = False
 
-        #put the profiler below
+        #USING TRY-EXCEPT-FINALLY Block to prevent RuntimeError: Profiler didn't finish running error
+        #oh the memory of the OOP course
         try:
             with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True) as prof:
                 while True:
@@ -80,6 +89,9 @@ def main():
                     # Track which classes are currently detected
                     current_detections = set()
 
+                    #TRACKING LOGIC HERE
+                    #IF RESULTS IS NULL THEN (i still don't know tho)
+                    
                     # Draw the bounding boxes by iterating over the results
                     for result in results:
                         for r in result.boxes.data.tolist():
@@ -154,10 +166,8 @@ def main():
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
 
-                # Insert printing logic in here
                 # For Inference Time (counting inference time average):
                 metadata['inference_time'] = sum(temp_inference_time) / len(temp_inference_time)
-                print(f"Average Inference Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
 
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -168,31 +178,31 @@ def main():
             for evt in inference_key_averages:
                 print(evt) #output will be: <FunctionEventAvg key=model_inference self_cpu_time=7.370s cpu_time=64.550ms  self_cuda_time=5.604s cuda_time=64.498ms input_shapes= cpu_memory_usage=0 cuda_memory_usage=44466176>
                 result=f"{evt}"
-                # Logic To Parse Output
-                result = "<FunctionEventAvg key=model_inference self_cpu_time=7.370s cpu_time=64.550ms  self_cuda_time=5.604s cuda_time=64.498ms input_shapes= cpu_memory_usage=0 cuda_memory_usage=44466176>"
                 # Split the string by spaces
-                parts = result.split()
-
+                parts = result.split() #turn string into lists to be fetched
+                
                 # Extract information from parts
-                key = parts[1].split('=')[1]  # Extract key
-                self_cpu_time = float(parts[2].split('=')[1][:-1])  # Extract self_cpu_time
-                cpu_time = float(parts[3].split('=')[1][:-2])  # Extract cpu_time
-                self_cuda_time = float(parts[4].split('=')[1][:-1])  # Extract self_cuda_time
-                cuda_time = float(parts[5].split('=')[1][:-2])  # Extract cuda_time
-                input_shapes = parts[6].split('=')[1]  # Extract input_shapes
-                cpu_memory_usage = int(parts[7].split('=')[1])  # Extract cpu_memory_usage
-                cuda_memory_usage = int(parts[8].split('=')[1][:-1])  # Extract cuda_memory_usage and remove the ">" character
-
-                # Print the parsed variables --> FOR Debugging --- DELETE LATER
-                print("Key:", key)
-                print("Self CPU Time:", self_cpu_time)
-                print("CPU Time:", cpu_time)
-                print("Self CUDA Time:", self_cuda_time)
-                print("CUDA Time:", cuda_time)
-                print("Input Shapes:", input_shapes)
-                print("CPU Memory Usage:", cpu_memory_usage)
-                print("CUDA Memory Usage:", cuda_memory_usage)
-
+                avg_cpu_time = float(parts[2].split('=')[1][:-1])  # Extract self_cpu_time
+                avg_cuda_time = float(parts[4].split('=')[1][:-1])  # Extract self_cuda_time
+                cpu_memory_usage_bytes = int(parts[7].split('=')[1])  # Extract cpu_memory_usage
+                cuda_memory_usage_bytes = int(parts[8].split('=')[1][:-1])  # Extract cuda_memory_usage and remove the ">" character
+                
+                # Convert CUDA memory usage from bytes to megabytes
+                avg_memory_usage_mb = cpu_memory_usage_bytes / (1024 ** 2) if cpu_memory_usage_bytes != 0 else 0
+                avg_cuda_memory_usage_mb = cuda_memory_usage_bytes / (1024 ** 2) if cuda_memory_usage_bytes != 0 else 0
+                
+                # Adding fetched data to dictionary
+                metadata['avg_cpu_time'] = avg_cpu_time
+                metadata['avg_cuda_time'] = avg_cuda_time
+                metadata['avg_memory_usage'] = avg_memory_usage_mb
+                metadata['avg_cuda_memory_usage'] = avg_cuda_memory_usage_mb
+                
+                # Print the parsed variables
+                print("Self CPU Time:", metadata['avg_cpu_time'])
+                print("Self CUDA Time:", metadata['avg_cuda_time'])
+                print("CPU Memory Usage:", metadata['avg_memory_usage'])
+                print("CUDA Memory Usage:",  metadata['avg_cuda_memory_usage'],"mb")
+                print(f"Average Inference Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
 
             # Release the VideoCapture object
             cap.release()
