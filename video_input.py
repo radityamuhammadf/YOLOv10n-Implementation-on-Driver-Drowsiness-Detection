@@ -39,8 +39,19 @@ def main():
         #     'inference_time':0,
         #     'profiler_result':""
         # },
-        'debug_video_sample': {
-            'path': os.path.join(current_directory, r'test_video\debugging_sample.avi'),
+        # 'debug_video_sample': {
+        #     'path': os.path.join(current_directory, r'test_video\debugging_sample.avi'),
+        #     'light_sufficient': True,
+        #     'looking_lr': False,
+        #     'detected_drowsiness': [],
+        #     'ground_truth_drowsiness': [],
+        #     'detection_accuracy':0,
+        #     'false_positive_rate':0,
+        #     'inference_time':0,
+        #     'profiler_result':""
+        # },
+        'light_sufficient-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-glasses.mp4'),
             'light_sufficient': True,
             'looking_lr': False,
             'detected_drowsiness': [],
@@ -50,49 +61,38 @@ def main():
             'inference_time':0,
             'profiler_result':""
         },
-        # 'light_sufficient-glasses': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-glasses.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
-        # 'light_sufficient-looking_lr-glasses': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-looking_lr-glasses.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
-        # 'low_light-looking_lr': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light-looking_lr.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
-        # 'low_light': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
+        'light_sufficient-looking_lr-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-looking_lr-glasses.mp4'),
+            'light_sufficient': True,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'profiler_result':""
+        },
+        'low_light-looking_lr': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light-looking_lr.mp4'),
+            'light_sufficient': True,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'profiler_result':""
+        },
+        'low_light': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light.mp4'),
+            'light_sufficient': True,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'profiler_result':""
         },
 
     }
@@ -130,7 +130,9 @@ def main():
                     ret, frame = cap.read()
                     if not ret:
                         break
-                    frame_number += 1 
+                    frame_number += 1
+                    # Resize the frame to 512x512
+                    frame = cv2.resize(frame, (512, 512)) 
 
                     # Perform inference - record resource and inference time
                     with record_function("model_inference"):
