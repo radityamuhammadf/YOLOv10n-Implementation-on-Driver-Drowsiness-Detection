@@ -4,34 +4,52 @@ import time
 import os
 import torch
 from torch.profiler import profile, record_function, ProfilerActivity
+import openpyxl
+from datetime import datetime
 
 def main():
     current_directory = os.getcwd()
     # Load the model
     model = YOLOv10(os.path.join(current_directory, r"training_result\best.pt"))
 
+    # Excel Export Workbook Initiation
+    # Create Excel workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Videos Metadata"
+    # Create Header Row
+    # Write the header row
+    headers = [
+        "Video Name", "Light Sufficient", "Looking LR", 
+        "Detection Accuracy", "False Positive Rate", 
+        "Inference Time", "Profiler Result"
+    ]
+    ws.append(headers)
+
     #creating videos_metadata dictionary
     videos_metadata = {
-        # 'webcam': {
-        #     'path': 0,
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'inference_time':[]
-        # },
+        'webcam_input': {
+            'path': 0,
+            'light_sufficient': True,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'profiler_result':""
+        },
         'debug_video_sample': {
             'path': os.path.join(current_directory, r'test_video\debugging_sample.avi'),
             'light_sufficient': True,
             'looking_lr': False,
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
             'inference_time':0,
-            'avg_cpu_time':0,
-            'avg_cuda_time':0,
-            'avg_memory_usage':0,
-            'avg_cuda_memory_usage':0
-        }
+            'profiler_result':""
+        },
     }
     # #example of adding metadata (used later for the four video data)
     # videos_metadata['video_name'] = {
@@ -39,12 +57,11 @@ def main():
     #     'light_sufficient': False,
     #     'looking_lr': True,
     #     'detected_drowsiness': [0.1, 0.3, 0.5],  # Example list of floats
-    #     'ground_truth_drowsiness': [0.2, 0.4, 0.6],  # Example list of floats
+    #     'ground_truth_drowsiness': [0.2, 0.4, 0.6],  # Example list of floats,
+    #     'detection_accuracy':0,
+    #     'false_positive_rate':0,
     #     'inference_time':0,
-    #      'avg_cpu_time':0,
-    #      'avg_cuda_time':0,
-    #      'avg_memory_usage':0,
-    #      'avg_cuda_memory_usage':0
+    #     'profiler_result':""
     # }
 
     #iterating every metadata element in every 'video_name' (videos_metadata members) element
@@ -67,6 +84,8 @@ def main():
 
         # videos_metadata
 
+        # Drowsy state declaration
+        prev_drowsy_state=False
         drowsy_state = False
 
         #USING TRY-EXCEPT-FINALLY Block to prevent RuntimeError: Profiler didn't finish running error
@@ -147,6 +166,13 @@ def main():
                     if drowsy_state is True:
                         cv2.rectangle(frame, (500, 20), (640, 60), (255, 255, 255), -1)
                         cv2.putText(frame, 'Drowsy', (500, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+                        #record the first time drowsiness detected by multiplying current frame number with frame duration
+                        if prev_drowsy_state is False:
+                            metadata['detected_drowsiness'].append(frame_number*frame_duration)                            
+                        prev_drowsy_state=True
+                    else:
+                        prev_drowsy_state = False
+
 
                     """
                     Static Information Display Function
@@ -168,6 +194,7 @@ def main():
 
                 # For Inference Time (counting inference time average):
                 metadata['inference_time'] = sum(temp_inference_time) / len(temp_inference_time)
+            cap.release()    
 
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -175,38 +202,48 @@ def main():
             # Filter profiling results to show only model_inference resource usage
             key_averages = prof.key_averages()
             inference_key_averages = [evt for evt in key_averages if "model_inference" in evt.key]
+            # Accessing the profiling result
             for evt in inference_key_averages:
-                print(evt) #output will be: <FunctionEventAvg key=model_inference self_cpu_time=7.370s cpu_time=64.550ms  self_cuda_time=5.604s cuda_time=64.498ms input_shapes= cpu_memory_usage=0 cuda_memory_usage=44466176>
-                result=f"{evt}"
-                # Split the string by spaces
-                parts = result.split() #turn string into lists to be fetched
-                
-                # Extract information from parts
-                avg_cpu_time = float(parts[2].split('=')[1][:-1])  # Extract self_cpu_time
-                avg_cuda_time = float(parts[4].split('=')[1][:-1])  # Extract self_cuda_time
-                cpu_memory_usage_bytes = int(parts[7].split('=')[1])  # Extract cpu_memory_usage
-                cuda_memory_usage_bytes = int(parts[8].split('=')[1][:-1])  # Extract cuda_memory_usage and remove the ">" character
-                
-                # Convert CUDA memory usage from bytes to megabytes
-                avg_memory_usage_mb = cpu_memory_usage_bytes / (1024 ** 2) if cpu_memory_usage_bytes != 0 else 0
-                avg_cuda_memory_usage_mb = cuda_memory_usage_bytes / (1024 ** 2) if cuda_memory_usage_bytes != 0 else 0
-                
-                # Adding fetched data to dictionary
-                metadata['avg_cpu_time'] = avg_cpu_time
-                metadata['avg_cuda_time'] = avg_cuda_time
-                metadata['avg_memory_usage'] = avg_memory_usage_mb
-                metadata['avg_cuda_memory_usage'] = avg_cuda_memory_usage_mb
-                
-                # Print the parsed variables
-                print("Self CPU Time:", metadata['avg_cpu_time'])
-                print("Self CUDA Time:", metadata['avg_cuda_time'])
-                print("CPU Memory Usage:", metadata['avg_memory_usage'])
-                print("CUDA Memory Usage:",  metadata['avg_cuda_memory_usage'],"mb")
-                print(f"Average Inference Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
+                metadata['profiler_result']=f"{evt}"
+            
+            print("Profiling Result:\n",metadata['profiler_result']) #debugging prompt
 
-            # Release the VideoCapture object
-            cap.release()
+            # Measure and print other metadata
+            # Detection Accuracy Measurements
+            if len(metadata['ground_truth_drowsiness']) != 0:
+                if len(metadata['detected_drowsiness'])<=len(metadata['ground_truth_drowsiness']): #stating if there's no false positive by make sure the ground truth are more than equal to detected state 
+                    metadata['detection_accuracy']=len(metadata['detected_drowsiness'])/len(metadata['ground_truth_drowsiness'])
+                    metadata['false_positive_rate']=0
+                else: #for if the detected state exceed the ground truth 
+                    # find exceeding values by subsracting detected drowsiness with ground truth value
+                    exceed_value=len(metadata['detected_drowsiness'])-len(metadata['ground_truth_drowsiness'])
+                    metadata['detection_accuracy']=(len(metadata['ground_truth_drowsiness'])-exceed_value)/len(metadata['ground_truth_drowsiness'])
+                    metadata['false_positive_rate']=exceed_value/len(metadata['ground_truth_drowsiness'])
+            print(f"Average Infqerence Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
+            
+            #Append Row Using Video Metadata Information
+            row = [
+                video_name,
+                metadata['light_sufficient'],
+                metadata['looking_lr'],
+                metadata['detection_accuracy'],
+                metadata['false_positive_rate'],
+                metadata['inference_time'],
+                metadata['profiler_result']
+            ]
+            ws.append(row)
+    
+    # Export Excel File
+    # Generate filename
+    now = datetime.now()
+    date_str = now.strftime("%b%d-%H%M")
+    dynamic_filename = f"YOLOv10-VideoTest-Debug-{date_str}.xlsx" #For Debugging
+    # dynamic_filename = f"VideoTest-Main-{date_str}.xlsx" #For The Main Test Set
+    output_file=os.path.join(current_directory, f"video-test_result/{dynamic_filename}")
+    wb.save(output_file)
+
     cv2.destroyAllWindows()
+
 
 if __name__ == '__main__':
     main()
