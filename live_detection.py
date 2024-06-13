@@ -24,6 +24,11 @@ def main():
         'closed-eyes': {'duration': 0, 'frame_count': 0, 'last_seen_frame': None},
         'yawn': {'duration': 0, 'frame_count': 0, 'last_seen_frame': None}
     }
+    # Initialize so-called tracking logic dictionary -> for recording latest detection if there's no detection
+    prev_annotation={
+        'inference_results':[],
+        'rep_count':16 # -> delaying maximum 4 frames if the current frame don't have any detection result (4 frames equal to 0.12)
+    }
 
     drowsy_state = False
 
@@ -36,6 +41,14 @@ def main():
         # Perform inference
         results = model.predict(frame, conf=0.6)
 
+        #TRACKING LOGIC HERE
+        #IF RESULTS IS NULL THEN (i still don't know tho), now i know
+        if len(results) !=0: #branch for if there's detection made by the system
+            prev_annotation['inference_results']=results
+            prev_annotation['rep_count']=16
+        elif len(results) == 0 and len(prev_annotation['inference_results']!=0): #check if the 'backup' dictionary has the annotation data
+            results=prev_annotation['inference_results']
+            prev_annotation['rep_count']-=1
         # Track which classes are currently detected
         current_detections = set()
 

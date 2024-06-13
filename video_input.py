@@ -8,6 +8,7 @@ import openpyxl
 from datetime import datetime
 
 def main():
+    test_time_start=time.time()
     current_directory = os.getcwd()
     # Load the model
     model = YOLOv10(os.path.join(current_directory, r"training_result\best.pt"))
@@ -115,7 +116,12 @@ def main():
             'yawn': {'duration': 0, 'frame_count': 0, 'last_seen_frame': None}
         }
 
-        # videos_metadata
+        # Initialize so-called tracking logic dictionary -> for recording latest detection if there's no detection
+        prev_annotation={
+            'inference_results':[],
+            'rep_count':16 # -> delaying maximum 16 frames if the current frame don't have any detection result (16 frames equal to 0.48 [by 16*0.03])
+        }
+
 
         # Drowsy state declaration
         prev_drowsy_state=False
@@ -145,7 +151,13 @@ def main():
                     current_detections = set()
 
                     #TRACKING LOGIC HERE
-                    #IF RESULTS IS NULL THEN (i still don't know tho)
+                    #IF RESULTS IS NULL THEN (i still don't know tho), now i know
+                    if len(results) !=0: #branch for if there's detection made by the system
+                        prev_annotation['inference_results']=results
+                        prev_annotation['rep_count']=16
+                    elif len(results) == 0 and len(prev_annotation['inference_results']!=0): #check if the 'backup' dictionary has the annotation data
+                        results=prev_annotation['inference_results']
+                        prev_annotation['rep_count']-=1
                     
                     # Draw the bounding boxes by iterating over the results
                     for result in results:
@@ -178,7 +190,7 @@ def main():
 
                     # Convert frame counts to time using FPS
                     for class_name in detections:
-                        # this default frames per second are 30FPS -> and the duration for each frame are 1/30 ~ 0.33
+                        # this default frames per second are 30FPS -> and the duration for each frame are 1/30 ~ 0.03
                         # for instance, if the closed-eyes class are detected for 65 frames consecutively
                         # that means the durations of detected closed-eyes are 65*0.03 which are 1.95s
                         detections[class_name]['duration'] = detections[class_name]['frame_count'] * frame_duration
@@ -255,7 +267,7 @@ def main():
                     exceed_value=len(metadata['detected_drowsiness'])-len(metadata['ground_truth_drowsiness'])
                     metadata['detection_accuracy']=(len(metadata['ground_truth_drowsiness'])-exceed_value)/len(metadata['ground_truth_drowsiness'])
                     metadata['false_positive_rate']=exceed_value/len(metadata['ground_truth_drowsiness'])
-            print(f"Average Infqerence Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
+            print(f"Average Inference Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
             
             #Append Row Using Video Metadata Information
             row = [
@@ -268,6 +280,12 @@ def main():
                 metadata['profiler_result']
             ]
             ws.append(row)
+    
+    #Append How Long The Test is Going
+    test_time_end=time.time()
+    test_dur_min,test_dur_sec=divmod((test_time_end-test_time_start),60)
+    ws.append([f"This test took {int(test_dur_min)} minutes and {test_dur_sec:.2f} seconds"])
+    print(f"This test took {int(test_dur_min)} minutes and {test_dur_sec:.2f} seconds")
     
     # Export Excel File
     # Generate filename
