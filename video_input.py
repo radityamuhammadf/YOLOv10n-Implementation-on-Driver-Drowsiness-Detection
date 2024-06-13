@@ -119,7 +119,7 @@ def main():
         # Initialize so-called tracking logic dictionary -> for recording latest detection if there's no detection
         prev_annotation={
             'inference_results':[],
-            'rep_count':16 # -> delaying maximum 16 frames if the current frame don't have any detection result (16 frames equal to 0.48 [by 16*0.03])
+            'rep_count':12 # -> delaying maximum 12 frames if the current frame don't have any detection result (12 frames equal to 0.36 [by 12*0.03])
         }
 
 
@@ -154,7 +154,7 @@ def main():
                     #IF RESULTS IS NULL THEN (i still don't know tho), now i know
                     if len(results) !=0: #branch for if there's detection made by the system
                         prev_annotation['inference_results']=results
-                        prev_annotation['rep_count']=16
+                        prev_annotation['rep_count']=12
                     elif len(results) == 0 and len(prev_annotation['inference_results']!=0): #check if the 'backup' dictionary has the annotation data
                         results=prev_annotation['inference_results']
                         prev_annotation['rep_count']-=1
