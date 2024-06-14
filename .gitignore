@@ -1,6 +1,5 @@
 /venv
-# Temporarily ignoring readme file for further development
-readme.md
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
