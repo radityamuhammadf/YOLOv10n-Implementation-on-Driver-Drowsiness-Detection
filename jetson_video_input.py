@@ -3,9 +3,10 @@ from ultralytics import YOLOv10
 import time
 import os
 import torch
-from torch.profiler import profile, record_function, ProfilerActivity
 import openpyxl
 from datetime import datetime
+from jtop.jtop import jtop
+
 
 def main():
     test_time_start=time.time()
@@ -40,19 +41,8 @@ def main():
         #     'inference_time':0,
         #     'profiler_result':""
         # },
-        'debug_video_sample': {
-            'path': os.path.join(current_directory, r'test_video/debugging_sample.avi'),
-            'light_sufficient': True,
-            'looking_lr': False,
-            'detected_drowsiness': [],
-            'ground_truth_drowsiness': [],
-            'detection_accuracy':0,
-            'false_positive_rate':0,
-            'inference_time':0,
-            'profiler_result':""
-        },
-        # 'light_sufficient-glasses': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-glasses.mp4'),
+        # 'debug_video_sample': {
+        #     'path': os.path.join(current_directory, r'test_video/debugging_sample.avi'),
         #     'light_sufficient': True,
         #     'looking_lr': False,
         #     'detected_drowsiness': [],
@@ -62,8 +52,19 @@ def main():
         #     'inference_time':0,
         #     'profiler_result':""
         # },
+        'light_sufficient-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-glasses.mp4'),
+            'light_sufficient': True,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'profiler_result':""
+        },
         # 'light_sufficient-looking_lr-glasses': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\light_sufficient-looking_lr-glasses.mp4'),
+        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-looking_lr-glasses.mp4'),
         #     'light_sufficient': True,
         #     'looking_lr': False,
         #     'detected_drowsiness': [],
@@ -74,7 +75,7 @@ def main():
         #     'profiler_result':""
         # },
         # 'low_light-looking_lr': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light-looking_lr.mp4'),
+        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-looking_lr.mp4'),
         #     'light_sufficient': True,
         #     'looking_lr': False,
         #     'detected_drowsiness': [],
@@ -85,7 +86,7 @@ def main():
         #     'profiler_result':""
         # },
         # 'low_light': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation\low_light.mp4'),
+        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light.mp4'),
         #     'light_sufficient': True,
         #     'looking_lr': False,
         #     'detected_drowsiness': [],
@@ -106,7 +107,6 @@ def main():
         cap = cv2.VideoCapture(video_path)
         # cap = cv2.VideoCapture(os.path.join(current_directory, r"test_video\10-MaleGlasses-Trim.avi"))  
         fps = cap.get(cv2.CAP_PROP_FPS)
-        # fps=30
         frame_duration = 1 / fps
         frame_number = 0
         print("FPS: ", fps)
@@ -132,21 +132,21 @@ def main():
         #USING TRY-EXCEPT-FINALLY Block to prevent RuntimeError: Profiler didn't finish running error
         #oh the memory of the OOP course
         try:
-            with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], profile_memory=True, record_shapes=True) as prof:
+            with jtop() as jetson:
                 while True:
                     ret, frame = cap.read()
                     if not ret:
                         break
                     frame_number += 1
-                    # Resize the frame to 512x512
-                    frame = cv2.resize(frame, (512, 512)) 
+                    # Resize the frame to 512x384 -> 512 for 4:3 aspect ratio
+                    frame = cv2.resize(frame, (512, 384)) 
 
                     # Perform inference - record resource and inference time
-                    with record_function("model_inference"):
-                        inference_start=time.time()
-                        results = model.predict(frame, conf=0.6)
-                        inference_end=time.time()
-                        temp_inference_time.append(inference_end-inference_start) 
+                    # with record_function("model_inference"):
+                    inference_start=time.time()
+                    results = model.predict(frame, conf=0.6)
+                    inference_end=time.time()
+                    temp_inference_time.append(inference_end-inference_start) 
 
                     # Track which classes are currently detected
                     current_detections = set()
@@ -201,7 +201,7 @@ def main():
                     yawn_duration = detections['yawn']['duration']
                     
                     # Logic for detecting drowsiness
-                    if closed_eyes_duration > 0.5 or yawn_duration > 5.0:  # thresholds in seconds
+                    if closed_eyes_duration > 0.5 or yawn_duration > 3.0:  # thresholds in seconds
                         drowsy_state = True
                     else:
                         drowsy_state = False
@@ -243,17 +243,18 @@ def main():
 
                 # For Inference Time (counting inference time average):
                 metadata['inference_time'] = sum(temp_inference_time) / len(temp_inference_time)
-            cap.release()    
+            cap.release()
 
         except Exception as e:
             print(f"An error occurred: {e}")
         finally:
-            # Filter profiling results to show only model_inference resource usage
-            key_averages = prof.key_averages()
-            inference_key_averages = [evt for evt in key_averages if "model_inference" in evt.key]
-            # Accessing the profiling result
-            for evt in inference_key_averages:
-                metadata['profiler_result']=f"{evt}"
+            print("Jetson stats initialized successfully")
+            # print(f"CPU Usage: {jetson.stats['CPU']['usage']}")
+            print(f"GPU Usage: {jetson.stats['GPU']}")
+            print(f"CPU Usage: {jetson.processes[0][6]} %") #CPU usage on highest usage? 
+            # print(f"CPU Usage: {jetson.processes} %")
+            print(f"Memory Usage: {jetson.stats['RAM']}")
+            metadata['profiler_result'] = f"GPU Usage: {jetson.stats['GPU']}\nCPU Usage: {jetson.processes[0][6]} %\nMemory Usage: {jetson.stats['RAM']}"
             
             print("Profiling Result:\n",metadata['profiler_result']) #debugging prompt
 

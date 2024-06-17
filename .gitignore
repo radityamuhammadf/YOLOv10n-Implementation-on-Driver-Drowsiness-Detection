@@ -166,3 +166,6 @@ cython_debug/
 
 video-test_result/*
 Research_DDD_VideoEvaluation
+torch-2.3.0-cp310-cp310-linux_aarch64.whl
+torchaudio-2.3.0+952ea74-cp310-cp310-linux_aarch64.whl
+torchvision-0.18.0a0+6043bc2-cp310-cp310-linux_aarch64.whl
