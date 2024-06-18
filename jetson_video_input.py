@@ -4,6 +4,7 @@ import time
 import os
 import torch
 import openpyxl
+from openpyxl.styles import Font, Alignment
 from datetime import datetime
 from jtop.jtop import jtop
 
@@ -22,11 +23,18 @@ def main():
     # Create Header Row
     # Write the header row
     headers = [
-        "Video Name", "Light Sufficient", "Looking LR", 
-        "Detection Accuracy", "False Positive Rate", 
-        "Inference Time", "Profiler Result"
+        "Name", "Light", "Look", 
+        "Accuracy (%)", "FP Rate (%)", 
+        "Inf. Time (ms)", "CPU (%)", "GPU (%)","RAM (MB)"
     ]
     ws.append(headers)
+    # Set column width and make header text bold
+    for col in ws.iter_cols(min_row=1, max_row=1, min_col=1, max_col=len(headers)):
+        for cell in col:
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center')
+            ws.column_dimensions[cell.column_letter].width = 14
+    ws.column_dimensions['A'].width = 25
 
     #creating videos_metadata dictionary
     videos_metadata = {
@@ -57,44 +65,78 @@ def main():
             'light_sufficient': True,
             'looking_lr': False,
             'detected_drowsiness': [],
-            'ground_truth_drowsiness': [],
+            'ground_truth_drowsiness': [14,24,34,43,54],
             'detection_accuracy':0,
             'false_positive_rate':0,
             'inference_time':0,
-            'profiler_result':""
+            'CPU':0,
+            'GPU':0,
+            'RAM':0
         },
-        # 'light_sufficient-looking_lr-glasses': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-looking_lr-glasses.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
+        'light_sufficient-looking_lr-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-looking_lr-glasses.mp4'),
+            'light_sufficient': True,
+            'looking_lr': True,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [15,24,34,43,55],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'CPU':0,
+            'GPU':0,
+            'RAM':0
+        },
+        'low_light-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-glasses.mp4'),
+            'light_sufficient': False,
+            'looking_lr': False,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [14,25,34,45,56],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'CPU':0,
+            'GPU':0,
+            'RAM':0
+        },
+        'low_light-looking_lr-glasses': {
+            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-looking_lr-glasses.mp4'),
+            'light_sufficient': False,
+            'looking_lr': True,
+            'detected_drowsiness': [],
+            'ground_truth_drowsiness': [14,23,36,44,56],
+            'detection_accuracy':0,
+            'false_positive_rate':0,
+            'inference_time':0,
+            'CPU':0,
+            'GPU':0,
+            'RAM':0
+        },
         # 'low_light-looking_lr': {
         #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-looking_lr.mp4'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
+        #     'light_sufficient': False,
+        #     'looking_lr': True,
         #     'detected_drowsiness': [],
         #     'ground_truth_drowsiness': [],
         #     'detection_accuracy':0,
         #     'false_positive_rate':0,
         #     'inference_time':0,
-        #     'profiler_result':""
+        #     'CPU':0,
+        #     'GPU':0,
+        #     'RAM':0
         # },
         # 'low_light': {
         #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light.mp4'),
-        #     'light_sufficient': True,
+        #     'light_sufficient': False,
         #     'looking_lr': False,
         #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
+        #     'ground_truth_drowsiness': [16,25,35,43,56],
         #     'detection_accuracy':0,
         #     'false_positive_rate':0,
         #     'inference_time':0,
-        #     'profiler_result':""
+        #     'CPU':0,
+        #     'GPU':0,
+        #     'RAM':0
         # },
 
     }
@@ -201,7 +243,7 @@ def main():
                     yawn_duration = detections['yawn']['duration']
                     
                     # Logic for detecting drowsiness
-                    if closed_eyes_duration > 0.5 or yawn_duration > 3.0:  # thresholds in seconds
+                    if closed_eyes_duration > 0.5 or yawn_duration > 5.0:  # thresholds in seconds
                         drowsy_state = True
                     else:
                         drowsy_state = False
@@ -235,28 +277,36 @@ def main():
                     y_offset += 20
 
                     # Display the frame
-                    cv2.imshow('Inference-YOLOv8n', frame)
+                    cv2.imshow('Inference-YOLOv10n', frame)
                     
                     # Break the loop
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
+                    inferece_time_avg=(sum(temp_inference_time) / len(temp_inference_time))*1000
 
-                # For Inference Time (counting inference time average):
-                metadata['inference_time'] = sum(temp_inference_time) / len(temp_inference_time)
             cap.release()
 
         except Exception as e:
             print(f"An error occurred: {e}")
         finally:
-            print("Jetson stats initialized successfully")
-            # print(f"CPU Usage: {jetson.stats['CPU']['usage']}")
-            print(f"GPU Usage: {jetson.stats['GPU']}")
-            print(f"CPU Usage: {jetson.processes[0][6]} %") #CPU usage on highest usage? 
-            # print(f"CPU Usage: {jetson.processes} %")
-            print(f"Memory Usage: {jetson.stats['RAM']}")
-            metadata['profiler_result'] = f"GPU Usage: {jetson.stats['GPU']}\nCPU Usage: {jetson.processes[0][6]} %\nMemory Usage: {jetson.stats['RAM']}"
-            
-            print("Profiling Result:\n",metadata['profiler_result']) #debugging prompt
+            # Profiling Jetson Stats               
+            print("\nDEBUGGING STATS\n")
+            # Profiling Result
+            gpu_usage = jetson.stats['GPU']
+            # Collecting all CPU usage and calculate the average
+            cpu_usage = (jetson.stats['CPU1']+jetson.stats['CPU2']+jetson.stats['CPU3']+jetson.stats['CPU4']+jetson.stats['CPU5']+jetson.stats['CPU6'])/6
+            memory_usage = jetson.stats['RAM']
+
+            # Append Profiling Result to Metadata
+            metadata['CPU']=f"{cpu_usage:.2f}"
+            metadata['GPU']=f"{gpu_usage:.2f}"
+            metadata['RAM']=f"{memory_usage:.2f}"
+            metadata['inference_time'] = f"{inferece_time_avg:.2f}"
+
+            # Debugging Prompt
+            print(f"CPU Usage: {metadata['CPU']}%")
+            print(f"GPU Usage: {metadata['GPU']}%")
+            print(f"Memory Usage: {metadata['RAM']}MB")
 
             # Measure and print other metadata
             # Detection Accuracy Measurements
@@ -269,7 +319,7 @@ def main():
                     exceed_value=len(metadata['detected_drowsiness'])-len(metadata['ground_truth_drowsiness'])
                     metadata['detection_accuracy']=(len(metadata['ground_truth_drowsiness'])-exceed_value)/len(metadata['ground_truth_drowsiness'])
                     metadata['false_positive_rate']=exceed_value/len(metadata['ground_truth_drowsiness'])
-            print(f"Average Inference Time: {metadata['inference_time']*1000:.3f}ms") # debugging prompt
+            print(f"Average Inference Time: {metadata['inference_time']}ms") # debugging prompt
             
             #Append Row Using Video Metadata Information
             row = [
@@ -279,7 +329,9 @@ def main():
                 metadata['detection_accuracy'],
                 metadata['false_positive_rate'],
                 metadata['inference_time'],
-                metadata['profiler_result']
+                metadata['CPU'],
+                metadata['GPU'],
+                metadata['RAM']
             ]
             ws.append(row)
     
@@ -293,7 +345,7 @@ def main():
     # Generate filename
     now = datetime.now()
     date_str = now.strftime("%b%d-%H%M")
-    dynamic_filename = f"YOLOv10-VideoTest-Debug-{date_str}.xlsx" #For Debugging
+    dynamic_filename = f"YOLOv10-MainTest-{date_str}.xlsx" #For Debugging
     # dynamic_filename = f"VideoTest-Main-{date_str}.xlsx" #For The Main Test Set
     output_file=os.path.join(current_directory, f"video-test_result/{dynamic_filename}")
     wb.save(output_file)
