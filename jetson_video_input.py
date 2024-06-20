@@ -24,7 +24,7 @@ def main():
     # Write the header row
     headers = [
         "Name", "Light", "Look", 
-        "Accuracy (%)", "FP Rate (%)", 
+        "Predict","G. Truth","Accuracy (%)", "FP Rate (%)", 
         "Inf. Time (ms)", "CPU (%)", "GPU (%)","RAM (MB)"
     ]
     ws.append(headers)
@@ -159,16 +159,22 @@ def main():
             'yawn': {'duration': 0, 'frame_count': 0, 'last_seen_frame': None}
         }
 
-        # Initialize so-called tracking logic dictionary -> for recording latest detection if there's no detection
-        prev_annotation={
-            'inference_results':[],
-            'rep_count':12 # -> delaying maximum 12 frames if the current frame don't have any detection result (12 frames equal to 0.36 [by 12*0.03])
-        }
+        # # Initialize so-called tracking logic dictionary -> for recording latest detection if there's no detection
+        # prev_annotation={
+        #     'inference_results':[],
+        #     'rep_count':12 # -> delaying maximum 12 frames if the current frame don't have any detection result (12 frames equal to 0.36 [by 12*0.03])
+        # }
 
+        temp_resource={
+            'CPU':[],
+            'GPU':[],
+            'RAM':[]
+        }
 
         # Drowsy state declaration
         prev_drowsy_state=False
         drowsy_state = False
+        temp_detected_drowsiness = []
         
 
         #USING TRY-EXCEPT-FINALLY Block to prevent RuntimeError: Profiler didn't finish running error
@@ -188,19 +194,24 @@ def main():
                     inference_start=time.time()
                     results = model.predict(frame, conf=0.6)
                     inference_end=time.time()
-                    temp_inference_time.append(inference_end-inference_start) 
+                    temp_inference_time.append(inference_end-inference_start)
+                    # Profiling Jetson Stats
+                    temp_resource['CPU'].append((jetson.stats['CPU1']+jetson.stats['CPU2']+jetson.stats['CPU3']+jetson.stats['CPU4']+jetson.stats['CPU5']+jetson.stats['CPU6'])/6)
+                    temp_resource['GPU'].append(jetson.stats['GPU'])
+                    temp_resource['RAM'].append(jetson.stats['RAM'])
+
 
                     # Track which classes are currently detected
                     current_detections = set()
 
-                    #TRACKING LOGIC HERE
-                    #IF RESULTS IS NULL THEN (i still don't know tho), now i know
-                    if len(results) !=0: #branch for if there's detection made by the system
-                        prev_annotation['inference_results']=results
-                        prev_annotation['rep_count']=12
-                    elif len(results) == 0 and len(prev_annotation['inference_results']!=0): #check if the 'backup' dictionary has the annotation data
-                        results=prev_annotation['inference_results']
-                        prev_annotation['rep_count']-=1
+                    # #TRACKING LOGIC HERE
+                    # #IF RESULTS IS NULL THEN (i still don't know tho), now i know
+                    # if len(results) !=0: #branch for if there's detection made by the system
+                    #     prev_annotation['inference_results']=results
+                    #     prev_annotation['rep_count']=12
+                    # elif len(results) == 0 and len(prev_annotation['inference_results']!=0): #check if the 'backup' dictionary has the annotation data
+                    #     results=prev_annotation['inference_results']
+                    #     prev_annotation['rep_count']-=1
                     
                     # Draw the bounding boxes by iterating over the results
                     for result in results:
@@ -255,11 +266,12 @@ def main():
                     
                     # Drowsy State Branch Logic
                     if drowsy_state is True:
-                        cv2.rectangle(frame, (500, 20), (640, 60), (255, 255, 255), -1)
-                        cv2.putText(frame, 'Drowsy', (500, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+                        cv2.rectangle(frame, (400, 20), (512, 60), (255, 255, 255), -1)
+                        cv2.putText(frame, 'Drowsy', (400, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
                         #record the first time drowsiness detected by multiplying current frame number with frame duration
                         if prev_drowsy_state is False:
-                            metadata['detected_drowsiness'].append(frame_number*frame_duration)                            
+                            temp_detected_drowsiness.append(frame_number*frame_duration)
+                            metadata['detected_drowsiness'].append(f"{frame_number*frame_duration:.2f}")                            
                         prev_drowsy_state=True
                     else:
                         prev_drowsy_state = False
@@ -292,16 +304,18 @@ def main():
             # Profiling Jetson Stats               
             print("\nDEBUGGING STATS\n")
             # Profiling Result
-            gpu_usage = jetson.stats['GPU']
+            gpu_usage = sum(temp_resource['GPU'])/len(temp_resource['GPU'])
             # Collecting all CPU usage and calculate the average
-            cpu_usage = (jetson.stats['CPU1']+jetson.stats['CPU2']+jetson.stats['CPU3']+jetson.stats['CPU4']+jetson.stats['CPU5']+jetson.stats['CPU6'])/6
-            memory_usage = jetson.stats['RAM']
+            cpu_usage = sum(temp_resource['CPU'])/len(temp_resource['CPU'])
+            memory_usage = sum(temp_resource['RAM'])/len(temp_resource['RAM'])
 
             # Append Profiling Result to Metadata
             metadata['CPU']=f"{cpu_usage:.2f}"
             metadata['GPU']=f"{gpu_usage:.2f}"
             metadata['RAM']=f"{memory_usage:.2f}"
             metadata['inference_time'] = f"{inferece_time_avg:.2f}"
+            metadata['detected_drowsiness']=f"{metadata['detected_drowsiness']}"
+            metadata['ground_truth_drowsiness']=f"{metadata['ground_truth_drowsiness']}"
 
             # Debugging Prompt
             print(f"CPU Usage: {metadata['CPU']}%")
@@ -311,12 +325,12 @@ def main():
             # Measure and print other metadata
             # Detection Accuracy Measurements
             if len(metadata['ground_truth_drowsiness']) != 0:
-                if len(metadata['detected_drowsiness'])<=len(metadata['ground_truth_drowsiness']): #stating if there's no false positive by make sure the ground truth are more than equal to detected state 
-                    metadata['detection_accuracy']=len(metadata['detected_drowsiness'])/len(metadata['ground_truth_drowsiness'])
+                if len(temp_detected_drowsiness)<=len(metadata['ground_truth_drowsiness']): #stating if there's no false positive by make sure the ground truth are more than equal to detected state 
+                    metadata['detection_accuracy']=len(temp_detected_drowsiness)/len(metadata['ground_truth_drowsiness'])
                     metadata['false_positive_rate']=0
                 else: #for if the detected state exceed the ground truth 
                     # find exceeding values by subsracting detected drowsiness with ground truth value
-                    exceed_value=len(metadata['detected_drowsiness'])-len(metadata['ground_truth_drowsiness'])
+                    exceed_value=len(temp_detected_drowsiness)-len(metadata['ground_truth_drowsiness'])
                     metadata['detection_accuracy']=(len(metadata['ground_truth_drowsiness'])-exceed_value)/len(metadata['ground_truth_drowsiness'])
                     metadata['false_positive_rate']=exceed_value/len(metadata['ground_truth_drowsiness'])
             print(f"Average Inference Time: {metadata['inference_time']}ms") # debugging prompt
@@ -326,6 +340,8 @@ def main():
                 video_name,
                 metadata['light_sufficient'],
                 metadata['looking_lr'],
+                metadata['detected_drowsiness'],
+                metadata['ground_truth_drowsiness'],
                 metadata['detection_accuracy'],
                 metadata['false_positive_rate'],
                 metadata['inference_time'],
