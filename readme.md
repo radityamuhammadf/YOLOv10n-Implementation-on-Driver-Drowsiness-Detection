@@ -1,4 +1,4 @@
-# YOLOv8n Implementation on Driver Drowsiness Detection
+# YOLOv10n Implementation on Driver Drowsiness Detection
 
 An implementation of [Ultralytics - YOLOv10](https://github.com/THU-MIG/yolov10) repository for training on blink and yawn datasets to detect driver drowsiness.
 
