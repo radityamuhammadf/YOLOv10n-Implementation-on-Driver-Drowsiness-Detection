@@ -8,15 +8,15 @@ An implementation of [Ultralytics - YOLOv10](https://github.com/THU-MIG/yolov10)
 - [Usage](#usage)
 
 ## About
-This inference repository uses the transfer learning method from EfficientDet-D0 with the following training configuration:
-- YOLOv8 Version : n version (smallest)
+This inference repository uses the transfer learning method from YOLOv10 with the following training configuration:
+- YOLOv10 Version : n version (smallest)
 - Image input size: 512
 - Learning rate: 0,001 (1e-3)
 - Batch size: 16
 - Epochs: 25
 - Dataloader workers: 2 
 
-The training was stopped at 25 epochs due to an increasing total loss (it's unclear if this is relevant). The three latest epochs of the training progress resulted in the following code snippets: (TBA)
+The training was completed at 25 epochs with the three latest epochs of the training progress resulted in the following code snippets: (TBA)
 
 
 The final validation from the model was tested with 2903 images (20% of the dataset) and resulted in the following metrics: 
