@@ -24,7 +24,7 @@ def main():
     # Write the header row
     headers = [
         "Name", "Light", "Look", 
-        "Predict","G. Truth","Accuracy (%)", "FP Rate (%)", 
+        "Predict","G. Truth","Accuracy (%)", 
         "Inf. Time (ms)", "CPU (%)", "GPU (%)","RAM (MB)"
     ]
     ws.append(headers)
@@ -45,7 +45,6 @@ def main():
         #     'detected_drowsiness': [],
         #     'ground_truth_drowsiness': [],
         #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
         #     'inference_time':0,
         #     'profiler_result':""
         # },
@@ -56,7 +55,6 @@ def main():
         #     'detected_drowsiness': [],
         #     'ground_truth_drowsiness': [],
         #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
         #     'inference_time':0,
         #     'profiler_result':""
         # },
@@ -67,7 +65,6 @@ def main():
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [14,24,34,43,54],
             'detection_accuracy':0,
-            'false_positive_rate':0,
             'inference_time':0,
             'CPU':0,
             'GPU':0,
@@ -80,7 +77,6 @@ def main():
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [15,24,34,43,55],
             'detection_accuracy':0,
-            'false_positive_rate':0,
             'inference_time':0,
             'CPU':0,
             'GPU':0,
@@ -93,7 +89,6 @@ def main():
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [14,25,34,45,56],
             'detection_accuracy':0,
-            'false_positive_rate':0,
             'inference_time':0,
             'CPU':0,
             'GPU':0,
@@ -106,7 +101,6 @@ def main():
             'detected_drowsiness': [],
             'ground_truth_drowsiness': [14,23,36,44,56],
             'detection_accuracy':0,
-            'false_positive_rate':0,
             'inference_time':0,
             'CPU':0,
             'GPU':0,
@@ -119,7 +113,6 @@ def main():
         #     'detected_drowsiness': [],
         #     'ground_truth_drowsiness': [],
         #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
         #     'inference_time':0,
         #     'CPU':0,
         #     'GPU':0,
@@ -132,7 +125,6 @@ def main():
         #     'detected_drowsiness': [],
         #     'ground_truth_drowsiness': [16,25,35,43,56],
         #     'detection_accuracy':0,
-        #     'false_positive_rate':0,
         #     'inference_time':0,
         #     'CPU':0,
         #     'GPU':0,
@@ -140,6 +132,12 @@ def main():
         # },
 
     }
+    # Generate filename
+    now = datetime.now()
+    date_str = now.strftime("%b%d-%H%M") #Date Formatting for Video and Excel File
+    video_output_name=os.path.join(current_directory, f"predicted_videos/YOLOVideoResult-{date_str}.mp4")
+    codec=cv2.VideoWriter_fourcc(*'mp4v')
+    output_video_obj=cv2.VideoWriter(video_output_name,codec,30,(512,384))
 
     #iterating every metadata element in every 'video_name' (videos_metadata members) element
     for video_name, metadata in videos_metadata.items():
@@ -290,7 +288,10 @@ def main():
 
                     # Display the frame
                     cv2.imshow('Inference-YOLOv10n', frame)
-                    
+                    # Write the frame to the output video
+                    output_video_obj.write(frame)        
+
+
                     # Break the loop
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
@@ -342,8 +343,7 @@ def main():
                 metadata['looking_lr'],
                 metadata['detected_drowsiness'],
                 metadata['ground_truth_drowsiness'],
-                metadata['detection_accuracy'],
-                metadata['false_positive_rate'],
+                "", #blank for manual calculation
                 metadata['inference_time'],
                 metadata['CPU'],
                 metadata['GPU'],
@@ -358,14 +358,11 @@ def main():
     print(f"This test took {int(test_dur_min)} minutes and {test_dur_sec:.2f} seconds")
     
     # Export Excel File
-    # Generate filename
-    now = datetime.now()
-    date_str = now.strftime("%b%d-%H%M")
     dynamic_filename = f"YOLOv10-MainTest-{date_str}.xlsx" #For Debugging
     # dynamic_filename = f"VideoTest-Main-{date_str}.xlsx" #For The Main Test Set
     output_file=os.path.join(current_directory, f"video-test_result/{dynamic_filename}")
     wb.save(output_file)
-
+    output_video_obj.release() #export the output video
     cv2.destroyAllWindows()
 
 
