@@ -46,7 +46,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': True,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,22,26,39,44,47,56],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -56,7 +56,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': False,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [17,22,24,39,43,46,58],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -66,7 +66,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': True,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,25,39,45,46,61],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -76,7 +76,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': False,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,22,24,38,45,47,58],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -113,7 +113,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': True,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [17,23,25,39,44,45,58],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -123,7 +123,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': False,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [17,24,25,38,44,46,56],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -133,7 +133,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': True,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,24,26,39,46,47,61],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -143,7 +143,7 @@ videos_metadata = {
         'light_sufficient': False,
         'looking_lr': False,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,24,26,38,44,47,59],
         'detection_accuracy':0,
         'inference_time':0,
         'profiler_result':""
@@ -153,7 +153,7 @@ videos_metadata = {
         'light_sufficient': True,
         'looking_lr': True,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,22,24,39,44,47,59],
         'detection_accuracy':0,
         'inference_time':0,
         'CPU':0,
@@ -165,7 +165,7 @@ videos_metadata = {
         'light_sufficient': True,
         'looking_lr': False,
         'detected_drowsiness': [],
-        'ground_truth_drowsiness': [],
+        'ground_truth_drowsiness': [18,23,26,37,43,46,59],
         'detection_accuracy':0,
         'inference_time':0,
         'CPU':0,
