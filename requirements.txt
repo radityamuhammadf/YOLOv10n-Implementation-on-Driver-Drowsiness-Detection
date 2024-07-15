@@ -49,3 +49,5 @@ opencv-python
 ultralytics
 supervision
 huggingface_hub
+simpleaudio
+pydub
