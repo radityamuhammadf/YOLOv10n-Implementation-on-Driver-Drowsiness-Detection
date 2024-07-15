@@ -7,6 +7,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment
 from datetime import datetime
 from jtop.jtop import jtop
+from videoMetaData import videos_metadata
 
 
 def main():
@@ -36,102 +37,6 @@ def main():
             ws.column_dimensions[cell.column_letter].width = 14
     ws.column_dimensions['A'].width = 25
 
-    #creating videos_metadata dictionary
-    videos_metadata = {
-        # 'webcam_input': {
-        #     'path': 0,
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
-        # 'debug_video_sample': {
-        #     'path': os.path.join(current_directory, r'test_video/debugging_sample.avi'),
-        #     'light_sufficient': True,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'inference_time':0,
-        #     'profiler_result':""
-        # },
-        'light_sufficient-glasses': {
-            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-glasses.mp4'),
-            'light_sufficient': True,
-            'looking_lr': False,
-            'detected_drowsiness': [],
-            'ground_truth_drowsiness': [14,24,34,43,54],
-            'detection_accuracy':0,
-            'inference_time':0,
-            'CPU':0,
-            'GPU':0,
-            'RAM':0
-        },
-        'light_sufficient-looking_lr-glasses': {
-            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/light_sufficient-looking_lr-glasses.mp4'),
-            'light_sufficient': True,
-            'looking_lr': True,
-            'detected_drowsiness': [],
-            'ground_truth_drowsiness': [15,24,34,43,55],
-            'detection_accuracy':0,
-            'inference_time':0,
-            'CPU':0,
-            'GPU':0,
-            'RAM':0
-        },
-        'low_light-glasses': {
-            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-glasses.mp4'),
-            'light_sufficient': False,
-            'looking_lr': False,
-            'detected_drowsiness': [],
-            'ground_truth_drowsiness': [14,25,34,45,56],
-            'detection_accuracy':0,
-            'inference_time':0,
-            'CPU':0,
-            'GPU':0,
-            'RAM':0
-        },
-        'low_light-looking_lr-glasses': {
-            'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-looking_lr-glasses.mp4'),
-            'light_sufficient': False,
-            'looking_lr': True,
-            'detected_drowsiness': [],
-            'ground_truth_drowsiness': [14,23,36,44,56],
-            'detection_accuracy':0,
-            'inference_time':0,
-            'CPU':0,
-            'GPU':0,
-            'RAM':0
-        },
-        # 'low_light-looking_lr': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light-looking_lr.mp4'),
-        #     'light_sufficient': False,
-        #     'looking_lr': True,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [],
-        #     'detection_accuracy':0,
-        #     'inference_time':0,
-        #     'CPU':0,
-        #     'GPU':0,
-        #     'RAM':0
-        # },
-        # 'low_light': {
-        #     'path': os.path.join(current_directory, r'Research_DDD_VideoEvaluation/low_light.mp4'),
-        #     'light_sufficient': False,
-        #     'looking_lr': False,
-        #     'detected_drowsiness': [],
-        #     'ground_truth_drowsiness': [16,25,35,43,56],
-        #     'detection_accuracy':0,
-        #     'inference_time':0,
-        #     'CPU':0,
-        #     'GPU':0,
-        #     'RAM':0
-        # },
-
-    }
     # Generate filename
     now = datetime.now()
     date_str = now.strftime("%b%d-%H%M") #Date Formatting for Video and Excel File
