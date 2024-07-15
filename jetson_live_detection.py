@@ -2,9 +2,15 @@ import cv2
 from ultralytics import YOLOv10
 import time
 import os
-import supervision as sv
+import simpleaudio as sa
+from pydub import AudioSegment
+import threading
 
 current_directory = os.getcwd()
+
+def play_audio(audio):
+    audio_obj = audio.play()
+    audio_obj.wait_done()
 
 def main():
     # Load the model
@@ -29,6 +35,14 @@ def main():
         'inference_results':[],
         'rep_count':16 # -> delaying maximum 4 frames if the current frame don't have any detection result (4 frames equal to 0.12)
     }
+
+    # Warning Sound
+    # Initialization - Load the audio file and convert to wav
+    audio = AudioSegment.from_mp3(os.path.join(current_directory,"audio/warning.mp3"))
+    audio.export("audio/warning.wav", format="wav")
+
+    # Load the WAV file
+    warning_sound = sa.WaveObject.from_wave_file("audio/warning.wav")
 
     drowsy_state = False
 
@@ -105,8 +119,15 @@ def main():
         
         # Drowsy State Branch Logic
         if drowsy_state is True:
-            cv2.rectangle(frame, (500, 20), (640, 60), (255, 255, 255), -1)
-            cv2.putText(frame, 'Drowsy', (500, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+            cv2.rectangle(frame, (400, 20), (512, 60), (255, 255, 255), -1)
+            cv2.putText(frame, 'Drowsy', (400, 50), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+            #record the first time drowsiness detected by multiplying current frame number with frame duration
+            if prev_drowsy_state is False:
+                play_audio_thread = threading.Thread(target=play_audio, args=(warning_sound,))
+                play_audio_thread.start()
+            prev_drowsy_state=True
+        else:
+            prev_drowsy_state = False
 
         """
         Static Information Display Function
